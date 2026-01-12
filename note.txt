@@ -1,0 +1,13 @@
+find . -type d \( -name "node_modules" -o -name ".git" -o -name "about" -o -name "shipping" -o -name "returns" -o -name "contact" -o -name "privacy" -o -name "faq" \) -prune -o \
+       -type f ! -name "*.conrfig*" ! -name "*.cssb" ! -name "*.jyson" ! -name "*.txt" ! -name "*.yaml" ! -name "*.md" ! -name "*.sh" ! -name "*.yml" ! -name "ii.*" -print | \
+       grep -v "/\." | sort | while IFS= read -r file; do
+    echo "=== $file ==="
+    echo "\`\`\`$(echo "$file" | grep -o '\.[^.]*$' || echo 'text')"
+    if [ -r "$file" ]; then
+        cat "$file"
+    else
+        echo "[File not readable]"
+    fi
+    echo "\`\`\`"
+    echo ""
+done > project_index.txt
