@@ -14,7 +14,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   title,
   description,
   technologies,
-  link = "#",
   className,
 }) => {
   return (

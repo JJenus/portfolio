@@ -3,21 +3,9 @@ import {
   Database,
   Server,
   Layers,
-  Terminal,
-  Sparkles,
-  Activity,
-  Shield,
-  Globe,
   Mail,
   Phone,
   MapPin,
-  Download,
-  ChevronRight,
-  Cpu,
-  ExternalLink,
-  Menu,
-  X,
-  MessageSquare,
 } from "lucide-react";
 
 export const skillsData = [

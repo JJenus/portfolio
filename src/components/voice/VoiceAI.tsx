@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Mic, MicOff, Volume2, VolumeX, Bot, User } from "lucide-react";
@@ -17,13 +17,44 @@ interface Message {
 interface VoiceAIProps {
   className?: string;
   aiName?: string;
-  primaryColor?: string;
+}
+
+type SpeechRecognitionType = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+type SpeechRecognitionEvent = {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+};
+
+type SpeechRecognitionErrorEvent = {
+  error: string;
+};
+
+interface SpeechRecognitionResultList {
+  length: number;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
 }
 
 const VoiceAI: React.FC<VoiceAIProps> = ({
   className,
   aiName = "JENUS.AI",
-  primaryColor = "#06b6d4", // cyan-400
 }) => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -38,109 +69,12 @@ const VoiceAI: React.FC<VoiceAIProps> = ({
   const [interimTranscript, setInterimTranscript] = useState("");
   const [isAiResponding, setIsAiResponding] = useState(false);
 
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionType | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  
-
-  // Initialize speech recognition
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const SpeechRecognition = (window as any).SpeechRecognition || 
-                               (window as any).webkitSpeechRecognition;
-      
-      if (SpeechRecognition) {
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = true;
-        recognitionRef.current.interimResults = true;
-        recognitionRef.current.lang = "en-US";
-
-        recognitionRef.current.onresult = (event: any) => {
-          let interim = "";
-          let final = "";
-
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const transcript = event.results[i][0].transcript;
-            if (event.results[i].isFinal) {
-              final += transcript;
-            } else {
-              interim += transcript;
-            }
-          }
-
-          if (interim) {
-            setInterimTranscript(interim);
-          }
-
-          if (final) {
-            addUserMessage(final);
-            setInterimTranscript("");
-            processAIResponse(final);
-          }
-        };
-
-        recognitionRef.current.onerror = (event: any) => {
-          console.error("Speech recognition error:", event.error);
-          setIsListening(false);
-        };
-
-        synthRef.current = window.speechSynthesis;
-      } else {
-        console.warn("Speech Recognition API not supported in this browser");
-      }
-    }
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-    };
-  }, []);
-
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, interimTranscript]);
-
-  const addUserMessage = (text: string) => {
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text,
-      speaker: "user",
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, newMessage]);
-  };
-
-  const addAIMessage = (text: string) => {
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text,
-      speaker: "ai",
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, newMessage]);
-    speakText(text);
-  };
-
-  const toggleListening = () => {
-    if (!recognitionRef.current) {
-      alert("Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.");
-      return;
-    }
-
-    if (isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    } else {
-      recognitionRef.current.start();
-      setIsListening(true);
-    }
-  };
 
   // Process user input and generate AI response
-  const processAIResponse = async (userInput: string) => {
+  const processAIResponse = useCallback(async (userInput: string) => {
     setIsAiResponding(true);
     
     try {
@@ -165,53 +99,154 @@ const VoiceAI: React.FC<VoiceAIProps> = ({
     } finally {
       setIsAiResponding(false);
     }
+  }, []);
+
+  const addUserMessage = useCallback((text: string) => {
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      text,
+      speaker: "user",
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, newMessage]);
+  }, []);
+
+  const addAIMessage = useCallback((text: string) => {
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      text,
+      speaker: "ai",
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, newMessage]);
+    speakText(text);
+  }, []);
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const SpeechRecognition = (window as Window & typeof globalThis & {
+        SpeechRecognition?: new () => SpeechRecognitionType;
+        webkitSpeechRecognition?: new () => SpeechRecognitionType;
+      }).SpeechRecognition || 
+      (window as Window & typeof globalThis & {
+        webkitSpeechRecognition?: new () => SpeechRecognitionType;
+      }).webkitSpeechRecognition;
+      
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = "en-US";
+
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          let interim = "";
+          let final = "";
+
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              final += transcript;
+            } else {
+              interim += transcript;
+            }
+          }
+
+          if (interim) {
+            setInterimTranscript(interim);
+          }
+
+          if (final) {
+            addUserMessage(final);
+            setInterimTranscript("");
+            processAIResponse(final);
+          }
+        };
+
+        recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+          console.error("Speech recognition error:", event.error);
+          setIsListening(false);
+        };
+
+        recognitionRef.current = recognition;
+        synthRef.current = window.speechSynthesis;
+      } else {
+        console.warn("Speech Recognition API not supported in this browser");
+      }
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, [addUserMessage, processAIResponse]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, interimTranscript]);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      alert("Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.");
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      recognitionRef.current.start();
+      setIsListening(true);
+    }
   };
 
   // AI response generation using public APIs
   const generateResponse = async (userInput: string): Promise<string> => {
-  try {
-    // Generate the dynamic system prompt from your context object
-    const systemPrompt = formatSystemPrompt(jenusAIContext);
-    
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://jjenus.is-a.dev",
-        "X-Title": "Jenus Portfolio AI",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt, 
-          },
-          {
-            role: "user",
-            content: userInput,
-          },
-        ],
-        max_tokens: 250,
-        temperature: 0.7,
-      }),
-    });
+    try {
+      // Generate the dynamic system prompt from your context object
+      const systemPrompt = formatSystemPrompt(jenusAIContext);
+      
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://jjenus.is-a.dev",
+          "X-Title": "Jenus Portfolio AI",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            {
+              role: "system",
+              content: systemPrompt, 
+            },
+            {
+              role: "user",
+              content: userInput,
+            },
+          ],
+          max_tokens: 250,
+          temperature: 0.7,
+        }),
+      });
 
-    if (!response.ok) {
-      const error = await response.json();
+      if (!response.ok) {
+        const error = await response.json();
+        console.error("OpenRouter API error:", error);
+        throw new Error(error.error?.message || "API request failed");
+      }
+
+      const data = await response.json();
+      return data.choices[0]?.message?.content || "I apologize, I couldn't generate a response right now.";
+      
+    } catch (error) {
       console.error("OpenRouter API error:", error);
-      throw new Error(error.error?.message || "API request failed");
+      return generateSmartResponse(userInput);
     }
-
-    const data = await response.json();
-    return data.choices[0]?.message?.content || "I apologize, I couldn't generate a response right now.";
-    
-  } catch (error) {
-    console.error("OpenRouter API error:", error);
-    return generateSmartResponse(userInput);
-  }
-};
+  };
 
   // Fallback response generator
   const generateSmartResponse = (input: string): string => {
@@ -250,35 +285,35 @@ const VoiceAI: React.FC<VoiceAIProps> = ({
   };
 
   const speakText = (text: string) => {
-  if (!synthRef.current) return;
+    if (!synthRef.current) return;
 
-  synthRef.current.cancel();
+    synthRef.current.cancel();
 
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 0.8;
-  utterance.pitch = 0.65; // Lower pitch for a deeper tone
-  utterance.volume = 1.0;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.8;
+    utterance.pitch = 0.65; // Lower pitch for a deeper tone
+    utterance.volume = 1.0;
 
-  // Find and set a male voice
-  const voices = synthRef.current.getVoices();
-  // Look for a male voice. Common English male voice names include:
-  // 'Google UK English Male', 'Microsoft David - English (United States)', 'Alex'
-  const maleVoice = voices.find(voice => 
-    voice.name.includes('Male') || 
-    voice.name.includes('David') || 
-    voice.name.includes('Alex')
-  );
-  
-  if (maleVoice) {
-    utterance.voice = maleVoice;
-  }
+    // Find and set a male voice
+    const voices = synthRef.current.getVoices();
+    // Look for a male voice. Common English male voice names include:
+    // 'Google UK English Male', 'Microsoft David - English (United States)', 'Alex'
+    const maleVoice = voices.find(voice => 
+      voice.name.includes('Male') || 
+      voice.name.includes('David') || 
+      voice.name.includes('Alex')
+    );
+    
+    if (maleVoice) {
+      utterance.voice = maleVoice;
+    }
 
-  utterance.onstart = () => setIsSpeaking(true);
-  utterance.onend = () => setIsSpeaking(false);
-  utterance.onerror = () => setIsSpeaking(false);
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
 
-  synthRef.current.speak(utterance);
-};
+    synthRef.current.speak(utterance);
+  };
 
   const stopSpeaking = () => {
     if (synthRef.current) {
