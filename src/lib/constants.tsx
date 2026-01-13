@@ -17,6 +17,7 @@ import {
   ExternalLink,
   Menu,
   X,
+  MessageSquare,
 } from "lucide-react";
 
 export const skillsData = [

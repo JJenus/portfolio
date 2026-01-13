@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,10 +8,13 @@ import {
   Terminal,
   Sparkles,
   Activity,
+  MessageSquare,
+  X,
 } from "lucide-react";
 
 import { Typewriter, SkillCard, TerminalCard } from "./components/portfolio";
 import { Navbar, Footer } from "./components/layout";
+import { VoiceAI } from "./components/voice";
 import {
   skillsData,
   experienceData,
@@ -22,6 +25,7 @@ import { cn } from "./lib/utils";
 function App() {
   const { scrollY } = useScroll();
   const y = useTransform(scrollY, [0, 500], [0, 200]);
+  const [showVoiceAI, setShowVoiceAI] = useState(false);
 
   return (
     <main className="min-h-screen bg-[#0B0F19] text-slate-200 selection:bg-cyan-500/30 font-sans overflow-x-hidden relative">
@@ -36,8 +40,43 @@ function App() {
 
       <Navbar />
 
+      {/* Floating Voice AI Button */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="fixed bottom-6 right-6 z-50"
+      >
+        {!showVoiceAI ? (
+          <Button
+  onClick={() => setShowVoiceAI(true)}
+  className="relative rounded-full h-14 w-14 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-lg shadow-cyan-500/30 flex items-center justify-center"
+  size="icon"
+>
+  <MessageSquare className="w-7 h-7 text-white/80" />
+  <span className="absolute text-xs font-black text-white/90 drop-shadow-md">
+    Ai
+  </span>
+</Button>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative"
+          >
+            <VoiceAI className="w-[90vw] max-w-md h-[600px] shadow-2xl shadow-cyan-500/10" />
+            <Button
+              onClick={() => setShowVoiceAI(false)}
+              className="absolute -top-2 -right-2 rounded-full h-8 w-8 bg-red-500 hover:bg-red-600 shadow-lg"
+              size="icon"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </motion.div>
+        )}
+      </motion.div>
+
       {/* Hero Section */}
-      <section id="about" className="pt-32 pb-20 px-6 min-h-[90vh] flex items-center justify-center relative">
+      <section id="about" className="pt-32 pb-20 px-6 min-h-[90vh] flex items-center justify-center relative mb-3">
         <div className="container mx-auto grid lg:grid-cols-2 gap-12 items-center">
           {/* Left: Text Content */}
           <motion.div
@@ -55,7 +94,7 @@ function App() {
               <br />
               <span className="text-white">Jenus</span>
             </h1>
-            <div className="h-8 mb-8">
+            <div className="h-8 mb-10">
               <p className="text-xl md:text-2xl text-slate-400">
                 <Typewriter text="Initializing robust backend solutions..." />
               </p>
@@ -69,8 +108,12 @@ function App() {
               <Button className="gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700">
                 View Projects <ChevronRight className="w-4 h-4" />
               </Button>
-              <Button variant="outline" className="gap-2 border-slate-700 hover:bg-slate-900">
-                <Mail className="w-4 h-4" /> Contact
+              <Button 
+                variant="outline" 
+                className="gap-2 border-slate-700 hover:bg-slate-900"
+                onClick={() => setShowVoiceAI(true)}
+              >
+                <MessageSquare className="w-4 h-4" /> Talk to AI
               </Button>
             </div>
           </motion.div>
@@ -78,34 +121,38 @@ function App() {
           {/* Right: AI Core / Generative Visual */}
           <motion.div
             style={{ y }}
-            className="relative flex justify-center items-center"
+            className="relative flex justify-center items-center w-full max-w-[600px] mx-auto"
           >
-            {/* Generative Rings */}
-            <div className="absolute w-[400px] h-[400px] rounded-full border border-slate-800/50 animate-spin" />
-            <div className="absolute w-[350px] h-[350px] rounded-full border border-dashed border-slate-700/30 animate-spin-reverse" />
-            
-            {/* Gradient Glow Ring */}
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="absolute w-[300px] h-[300px] rounded-full"
-              style={{
-                background: "conic-gradient(from 0deg, transparent, #06b6d4, transparent, #a855f7, transparent)",
-                filter: "blur(40px)",
-                opacity: 0.4,
-              }}
-            />
+            {/* Responsive container for rings */}
+            <div className="relative w-full aspect-square max-w-[400px]">
+              
+              {/* Generative Rings - Responsive sizes */}
+              <div className="absolute inset-0 rounded-full border border-slate-800/50 animate-spin" />
+              <div className="absolute inset-[6.25%] rounded-full border border-dashed border-slate-700/30 animate-spin-reverse" />
+              
+              {/* Gradient Glow Ring */}
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                className="absolute inset-[12.5%] rounded-full"
+                style={{
+                  background: "conic-gradient(from 0deg, transparent, #06b6d4, transparent, #a855f7, transparent)",
+                  filter: "blur(40px)",
+                  opacity: 0.4,
+                }}
+              />
 
-            {/* Inner Core */}
-            <div className="relative z-10 w-[250px] h-[250px] bg-slate-900/80 border border-slate-700/50 rounded-full flex items-center justify-center shadow-2xl backdrop-blur-sm overflow-hidden">
-                <div className="text-center p-6">
-                    <Sparkles className="w-8 h-8 text-cyan-400 mx-auto mb-2" />
-                    <div className="text-xs font-mono text-slate-500 mb-1">UPTIME</div>
-                    <div className="text-2xl font-bold text-white mb-2">99.9%</div>
-                    <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 w-[95%]"></div>
-                    </div>
+              {/* Inner Core */}
+              <div className="absolute inset-[25%] bg-slate-900/80 border border-slate-700/50 rounded-full flex items-center justify-center shadow-2xl backdrop-blur-sm overflow-hidden">
+                <div className="text-center p-4 sm:p-6">
+                  <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-cyan-400 mx-auto mb-2" />
+                  <div className="text-xs font-mono text-slate-500 mb-1">UPTIME</div>
+                  <div className="text-xl sm:text-2xl font-bold text-white mb-2">99.9%</div>
+                  <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 w-[95%]"></div>
+                  </div>
                 </div>
+              </div>
             </div>
           </motion.div>
         </div>
@@ -154,8 +201,8 @@ function App() {
       </section>
 
       {/* Experience Timeline */}
-      <section id="experience" className="py-24 px-6 bg-gradient-to-b from-slate-950/50 to-[#0B0F19]">
-        <div className="container mx-auto max-w-4xl">
+      <section id="experience" className="py-24 px-2 md:px-6 bg-gradient-to-b from-slate-950/50 to-[#0B0F19]">
+        <div className="container mx-auto max-w-4xl"> 
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
@@ -183,36 +230,39 @@ function App() {
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.1 }}
                   viewport={{ once: true }}
-                  className={cn(
-                    "relative",
-                    idx % 2 === 0 ? "md:pr-[calc(50%+2rem)]" : "md:pl-[calc(50%+2rem)]"
-                  )}
+                  className="relative pl-12 md:pl-0"
                 >
                   {/* Timeline dot */}
                   <div className="absolute left-6 md:left-1/2 transform md:-translate-x-1/2 top-6 w-4 h-4 rounded-full bg-slate-900 border-2 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.5)] z-10" />
                   
-                  <Card className="border-slate-800 bg-slate-950/50 hover:bg-slate-900/30 transition-all duration-300">
-                    <div className="p-6">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
-                        <div>
-                          <h3 className="text-xl font-bold text-white">{job.role}</h3>
-                          <div className="text-cyan-400 font-medium">{job.company}</div>
-                          <div className="text-slate-500 text-sm mt-1">{job.location}</div>
+                  {/* Card container with alternating layout on desktop */}
+                  <div className={cn(
+                    "md:w-[calc(50%-2rem)]",
+                    idx % 2 === 0 ? "md:ml-auto md:pr-0" : "md:mr-auto md:pl-0"
+                  )}>
+                    <Card className="border-slate-800 bg-slate-950/50 hover:bg-slate-900/30 transition-all duration-300">
+                      <div className="p-6">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
+                          <div>
+                            <h3 className="text-xl font-bold text-white">{job.role}</h3>
+                            <div className="text-cyan-400 font-medium">{job.company}</div>
+                            <div className="text-slate-500 text-sm mt-1">{job.location}</div>
+                          </div>
+                          <div className="text-slate-500 text-sm font-mono mt-2 md:mt-0 bg-slate-900/50 px-3 py-1 rounded">
+                            {job.period}
+                          </div>
                         </div>
-                        <div className="text-slate-500 text-sm font-mono mt-2 md:mt-0 bg-slate-900/50 px-3 py-1 rounded">
-                          {job.period}
-                        </div>
+                        <ul className="space-y-3 text-slate-400 text-sm">
+                          {job.points.map((point, i) => (
+                            <li key={i} className="flex gap-3">
+                              <ChevronRight className="w-4 h-4 text-slate-600 shrink-0 mt-0.5" />
+                              {point}
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                      <ul className="space-y-3 text-slate-400 text-sm">
-                        {job.points.map((point, i) => (
-                          <li key={i} className="flex gap-3">
-                            <ChevronRight className="w-4 h-4 text-slate-600 shrink-0 mt-0.5" />
-                            {point}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </Card>
+                    </Card>
+                  </div>
                 </motion.div>
               ))}
             </div>
