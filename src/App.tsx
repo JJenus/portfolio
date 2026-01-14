@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 import { Typewriter, SkillCard, TerminalCard } from "./components/portfolio";
-import { Navbar, Footer } from "./components/layout";
+import { Navbar, Footer, RadialNav } from "./components/layout";
 import { VoiceAI } from "./components/voice";
 import {
   skillsData,
@@ -38,6 +38,7 @@ function App() {
       </div>
 
       <Navbar />
+      <RadialNav />
 
       {/* Floating Voice AI Button */}
       <motion.div

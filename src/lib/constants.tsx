@@ -6,7 +6,25 @@ import {
   Mail,
   Phone,
   MapPin,
+  User,
+  Home,
+  Briefcase,
+  FileText,
+  Sparkles,
+  Wrench,
+  Palette,
+  Camera,
+  Terminal,
+  Globe
 } from "lucide-react";
+
+export const navItems = [
+  { label: "Home", href: "#home", icon: Home },
+  { label: "About", href: "#about", icon: User },
+  { label: "Skills", href: "#skills", icon: Terminal },
+  { label: "Experience", href: "#experience", icon: Briefcase },
+  { label: "Projects", href: "#projects", icon: Code },
+];
 
 export const skillsData = [
   {
@@ -80,13 +98,6 @@ export const projectsData = [
     desc: "Multi-tenant system with RBAC and automated approval workflows.",
     link: "#",
   },
-];
-
-export const navItems = [
-  { label: "About", href: "#about" },
-  { label: "Skills", href: "#skills" },
-  { label: "Experience", href: "#experience" },
-  { label: "Projects", href: "#projects" },
 ];
 
 export const contactInfo = [
